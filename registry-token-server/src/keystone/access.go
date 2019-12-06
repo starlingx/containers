@@ -16,8 +16,8 @@ import (
 
 	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/auth"
-        "github.com/gophercloud/gophercloud"
-        "github.com/gophercloud/gophercloud/openstack"
+	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/openstack"
 )
 
 type accessController struct {
@@ -57,9 +57,9 @@ func (ac *accessController) Authorized(ctx context.Context, accessRecords ...aut
 
 	opts := gophercloud.AuthOptions{
 		IdentityEndpoint: ac.endpoint,
-		Username: username,
-		Password: password,
-		DomainID: "default",
+		Username:         username,
+		Password:         password,
+		DomainID:         "default",
 	}
 
 	if _, err := openstack.AuthenticatedClient(opts); err != nil {
@@ -71,6 +71,25 @@ func (ac *accessController) Authorized(ctx context.Context, accessRecords ...aut
 	}
 
 	return auth.WithUser(ctx, auth.UserInfo{Name: username}), nil
+}
+
+// AuthenticateUser checks a given user:password credential by keystone.
+// If the check passes, nil is returned.
+func (ac *accessController) AuthenticateUser(username string, password string) error {
+
+	opts := gophercloud.AuthOptions{
+		IdentityEndpoint: ac.endpoint,
+		Username:         username,
+		Password:         password,
+		DomainID:         "default",
+	}
+
+	if _, err := openstack.AuthenticatedClient(opts); err != nil {
+		context.GetLogger(context.Background()).Errorf("error authenticating user %q: %v", username, err)
+		return auth.ErrAuthenticationFailure
+	}
+
+	return nil
 }
 
 // challenge implements the auth.Challenge interface.
@@ -93,4 +112,3 @@ func (ch challenge) Error() string {
 func init() {
 	auth.Register("keystone", auth.InitFunc(newAccessController))
 }
-
