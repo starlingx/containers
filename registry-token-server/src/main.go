@@ -20,9 +20,9 @@ import (
 	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/api/errcode"
 	"github.com/docker/distribution/registry/auth"
+	_ "registry-token-server/keystone"
 	"github.com/docker/libtrust"
 	"github.com/gorilla/mux"
-	_ "registry-token-server/keystone"
 )
 
 var (
@@ -82,8 +82,8 @@ func main() {
 	}
 
 	ac, err := auth.GetAccessController("keystone", map[string]interface{}{
-		"realm":    realm,
-		"endpoint": keystoneEndpoint,
+		"realm": realm,
+		"endpoint":  keystoneEndpoint,
 	})
 	if err != nil {
 		logrus.Fatalf("Error initializing access controller: %v", err)
@@ -179,9 +179,9 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 	grantedAccessList := make([]auth.Access, 0, len(requestedAccessList))
 	for _, access := range requestedAccessList {
 		if access.Type == "repository" {
-			// filter access to repos if the user is not "admin"
-			// need to have a "/" at the end because it adds one at the beginning of the fcn
-			// probably to prevent people making accounts like "adminnot" to steal admin powers
+                        // filter access to repos if the user is not "admin"
+                        // need to have a "/" at the end because it adds one at the beginning of the fcn
+                        // probably to prevent people making accounts like "adminnot" to steal admin powers
 			if !strings.HasPrefix(access.Name, scope) && scope != "admin/" {
 				context.GetLogger(ctx).Debugf("Resource scope not allowed: %s", access.Name)
 				continue
