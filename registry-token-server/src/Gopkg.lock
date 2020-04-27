@@ -2,14 +2,14 @@
 
 
 [[projects]]
-  digest = "1:9c6c19030ff2899d13cfc7a4dc14ff3f2772395d848aa67580f96e6a58aa405f"
+  digest = "1:33e8a0fc9f993b2bc912152420644127e35b74587a6d694362772dd3821ca4cf"
   name = "github.com/Sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "55eb11d21d2a31a3cc93838241d04800f52e823d"
+  revision = "3d4380f53a34dcdc95f0c1db702615992b38d9a4"
 
 [[projects]]
-  digest = "1:e894100bb5cc3b952965c9e7d160ea09cc31469a06d7d4bf5326184a87f5c726"
+  digest = "1:c3de2c3f1d92395cccfc9c484168450ed52dd7897e482e362e5f6b45b269eda6"
   name = "github.com/docker/distribution"
   packages = [
     "context",
@@ -19,8 +19,8 @@
     "uuid",
   ]
   pruneopts = "UT"
-  revision = "48294d928ced5dd9b378f7fd7c6f5da3ff3f2c89"
-  version = "v2.6.2"
+  revision = "2461543d988979529609e8cb6fca9ca190dc48da"
+  version = "v2.7.1"
 
 [[projects]]
   digest = "1:0e229970bd76d6cdef6558f51ae493931485fb086d513bc4e3b80003bcf81f39"
@@ -53,11 +53,11 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:c661dee65a46d437daf269e5f5f462bd9df6d8e7c9750ad1655fb2cafdb177a6"
+  digest = "1:33e16c57473b7c44d261a6846b82c9389392f16fd41bf3d78c6cb5a96d695d1a"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+  revision = "599cba5e7b6137d46ddf58fb1765f5d928e69604"
 
 [[projects]]
   branch = "master"

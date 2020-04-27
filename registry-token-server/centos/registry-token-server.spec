@@ -12,12 +12,11 @@ Source1:        %{name}.service
 Source2:        token_server.conf
 
 # Go dependencies downloaded as tarballs
-Source10:       Sirupsen-logrus-55eb11d21d2a31a3cc93838241d04800f52e823d.tar.gz
-Source11:       docker-distribution-48294d928ced5dd9b378f7fd7c6f5da3ff3f2c89.tar.gz
+Source10:       Sirupsen-logrus-3d4380f53a34dcdc95f0c1db702615992b38d9a4.tar.gz
+Source11:       docker-distribution-v2.7.1.tar.gz
 Source12:       docker-libtrust-fa567046d9b14f6aa788882a950d69651d230b21.tar.gz
 Source13:       gophercloud-gophercloud-aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz
-Source14:       gorilla-context-08b5f424b9271eedf6f9f0ce86cb9396ed337a42.tar.gz
-Source15:       gorilla-mux-456bcfa82d672db7cae587c9b541463f65bc2718.tar.gz
+Source14:       gorilla-mux-599cba5e7b6137d46ddf58fb1765f5d928e69604.tar.gz
 
 BuildRequires: systemd
 Requires(post): systemd
@@ -39,11 +38,9 @@ ExclusiveArch:  %{?go_arches:%{go_arches}}%{!?go_arches:%{ix86} x86_64 %{arm}}
 %setup -T -D -a 12
 %setup -T -D -a 13
 %setup -T -D -a 14
-%setup -T -D -a 15
 mkdir -p _build/src/github.com/gorilla/ && mv gorilla-mux _build/src/github.com/gorilla/mux
-mkdir -p _build/src/github.com/docker/ && mv docker-distribution _build/src/github.com/docker/distribution
+mkdir -p _build/src/github.com/docker/ && mv docker-distribution-2.7.1 _build/src/github.com/docker/distribution
 mkdir -p _build/src/github.com/docker/ && mv docker-libtrust _build/src/github.com/docker/libtrust
-mkdir -p _build/src/github.com/docker/distribution/ && mv gorilla-context _build/src/github.com/docker/distribution/context
 mkdir -p _build/src/github.com/Sirupsen/ && mv Sirupsen-logrus _build/src/github.com/Sirupsen/logrus
 mkdir -p _build/src/github.com/gophercloud && mv gophercloud-gophercloud _build/src/github.com/gophercloud/gophercloud
 

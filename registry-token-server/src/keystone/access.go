@@ -11,10 +11,11 @@
 package keystone
 
 import (
+        "context"
 	"fmt"
 	"net/http"
 
-	"github.com/docker/distribution/context"
+	dcontext "github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/auth"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -42,7 +43,7 @@ func newAccessController(options map[string]interface{}) (auth.AccessController,
 }
 
 func (ac *accessController) Authorized(ctx context.Context, accessRecords ...auth.Access) (context.Context, error) {
-	req, err := context.GetRequest(ctx)
+	req, err := dcontext.GetRequest(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (ac *accessController) Authorized(ctx context.Context, accessRecords ...aut
 	}
 
 	if _, err := openstack.AuthenticatedClient(opts); err != nil {
-		context.GetLogger(ctx).Errorf("error authenticating user %q: %v", username, err)
+		dcontext.GetLogger(ctx).Errorf("error authenticating user %q: %v", username, err)
 		return nil, &challenge{
 			realm: ac.realm,
 			err:   auth.ErrAuthenticationFailure,
@@ -85,7 +86,7 @@ func (ac *accessController) AuthenticateUser(username string, password string) e
 	}
 
 	if _, err := openstack.AuthenticatedClient(opts); err != nil {
-		context.GetLogger(context.Background()).Errorf("error authenticating user %q: %v", username, err)
+		dcontext.GetLogger(context.Background()).Errorf("error authenticating user %q: %v", username, err)
 		return auth.ErrAuthenticationFailure
 	}
 
@@ -101,7 +102,7 @@ type challenge struct {
 var _ auth.Challenge = challenge{}
 
 // SetHeaders sets the basic challenge header on the response.
-func (ch challenge) SetHeaders(w http.ResponseWriter) {
+func (ch challenge) SetHeaders(r *http.Request, w http.ResponseWriter) {
 	w.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=%q", ch.realm))
 }
 
