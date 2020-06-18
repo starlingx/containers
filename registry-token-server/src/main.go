@@ -180,10 +180,10 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 	grantedAccessList := make([]auth.Access, 0, len(requestedAccessList))
 	for _, access := range requestedAccessList {
 		if access.Type == "repository" {
-			// filter access to repos if the user is not "admin"
+			// filter access to repos if the user is not "admin" or "sysinv"
 			// need to have a "/" at the end because it adds one at the beginning of the fcn
 			// probably to prevent people making accounts like "adminnot" to steal admin powers
-			if !strings.HasPrefix(access.Name, scope) && scope != "admin/" {
+			if !strings.HasPrefix(access.Name, scope) && scope != "admin/" && scope != "sysinv/" {
 				dcontext.GetLogger(ctx).Debugf("Resource scope not allowed: %s", access.Name)
 				continue
 			}
