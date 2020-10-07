@@ -8,4 +8,4 @@ COPY_LIST=" \
   $STX_BASE/downloads/gophercloud-gophercloud-aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz \
   $STX_BASE/downloads/gorilla-mux-599cba5e7b6137d46ddf58fb1765f5d928e69604.tar.gz \
 "
-TIS_PATCH_VER=2
+TIS_PATCH_VER=PKG_GITREVCOUNT

@@ -180,10 +180,51 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 	grantedAccessList := make([]auth.Access, 0, len(requestedAccessList))
 	for _, access := range requestedAccessList {
 		if access.Type == "repository" {
+
+			publicRepos := []string{"public/"}
+			// pause is usually used as a test deployment by kubernetes and deployed without pull secrets
+			// acmesolver is deployed in a namespace that don't have access to pull secrets
+			publicImages := []string{"k8s.gcr.io/pause",
+						 "quay.io/jetstack/cert-manager-acmesolver"}
+
+			// this controls our own authorization rules like admin accounts and public repos/images
+			// if authorized through other means, skip the usual authorization policy of
+			// user can only interact with their own repo
+			skipStandardAuthz := false
+
+			// public repo allows all images too be pulled by everyone
+			if strings.EqualFold(access.Action, "pull") {
+				for _, publicRepo := range publicRepos {
+					if strings.HasPrefix(access.Name, publicRepo) {
+						skipStandardAuthz = true
+					}
+				}
+			}
+
+                        // public images can be pulled by anyone, even though they sit in private repos
+                        if strings.EqualFold(access.Action, "pull") {
+                                for _, publicImage := range publicImages {
+                                        if access.Name == publicImage {
+                                                skipStandardAuthz = true
+                                        }
+                                }
+                        }
+
 			// filter access to repos if the user is not "admin" or "sysinv"
 			// need to have a "/" at the end because it adds one at the beginning of the fcn
 			// probably to prevent people making accounts like "adminnot" to steal admin powers
-			if !strings.HasPrefix(access.Name, scope) && scope != "admin/" && scope != "sysinv/" {
+			if scope == "admin/" || scope == "sysinv/" {
+				skipStandardAuthz = true
+			}
+
+			// we do not allow "mtce" to access the mtce repo because it is reserved for internal use
+			// we still allow the admin accounts to access the "mtce repo though
+                        if strings.HasPrefix(access.Name, scope) && scope == "mtce/" {
+                                dcontext.GetLogger(ctx).Debugf("Resource scope not allowed: %s", access.Name)
+                                continue
+                        }
+
+			if !strings.HasPrefix(access.Name, scope) && !skipStandardAuthz {
 				dcontext.GetLogger(ctx).Debugf("Resource scope not allowed: %s", access.Name)
 				continue
 			}
