@@ -8,6 +8,7 @@
 package main
 
 import (
+        "context"
 	"encoding/json"
 	"flag"
 	"math/rand"
@@ -17,7 +18,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/distribution/context"
+	dcontext "github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/api/errcode"
 	"github.com/docker/distribution/registry/auth"
 	"github.com/docker/libtrust"
@@ -92,7 +93,7 @@ func main() {
 	// TODO: Make configurable
 	issuer.Expiration = 15 * time.Minute
 
-	ctx := context.Background()
+	ctx := dcontext.Background()
 
 	ts := &tokenServer{
 		issuer:           issuer,
@@ -122,23 +123,23 @@ func main() {
 // request context from a base context.
 func handlerWithContext(ctx context.Context, handler func(context.Context, http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithRequest(ctx, r)
-		logger := context.GetRequestLogger(ctx)
-		ctx = context.WithLogger(ctx, logger)
+		ctx := dcontext.WithRequest(ctx, r)
+		logger := dcontext.GetRequestLogger(ctx)
+		ctx = dcontext.WithLogger(ctx, logger)
 
 		handler(ctx, w, r)
 	})
 }
 
 func handleError(ctx context.Context, err error, w http.ResponseWriter) {
-	ctx, w = context.WithResponseWriter(ctx, w)
+	ctx, w = dcontext.WithResponseWriter(ctx, w)
 
 	if serveErr := errcode.ServeJSON(w, err); serveErr != nil {
-		context.GetResponseLogger(ctx).Errorf("error sending error response: %v", serveErr)
+		dcontext.GetResponseLogger(ctx).Errorf("error sending error response: %v", serveErr)
 		return
 	}
 
-	context.GetResponseLogger(ctx).Info("application error")
+	dcontext.GetResponseLogger(ctx).Info("application error")
 }
 
 var refreshCharacters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -179,17 +180,58 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 	grantedAccessList := make([]auth.Access, 0, len(requestedAccessList))
 	for _, access := range requestedAccessList {
 		if access.Type == "repository" {
-			// filter access to repos if the user is not "admin"
+
+			publicRepos := []string{"public/"}
+			// pause is usually used as a test deployment by kubernetes and deployed without pull secrets
+			// acmesolver is deployed in a namespace that don't have access to pull secrets
+			publicImages := []string{"k8s.gcr.io/pause",
+						 "quay.io/jetstack/cert-manager-acmesolver"}
+
+			// this controls our own authorization rules like admin accounts and public repos/images
+			// if authorized through other means, skip the usual authorization policy of
+			// user can only interact with their own repo
+			skipStandardAuthz := false
+
+			// public repo allows all images too be pulled by everyone
+			if strings.EqualFold(access.Action, "pull") {
+				for _, publicRepo := range publicRepos {
+					if strings.HasPrefix(access.Name, publicRepo) {
+						skipStandardAuthz = true
+					}
+				}
+			}
+
+                        // public images can be pulled by anyone, even though they sit in private repos
+                        if strings.EqualFold(access.Action, "pull") {
+                                for _, publicImage := range publicImages {
+                                        if access.Name == publicImage {
+                                                skipStandardAuthz = true
+                                        }
+                                }
+                        }
+
+			// filter access to repos if the user is not "admin" or "sysinv"
 			// need to have a "/" at the end because it adds one at the beginning of the fcn
 			// probably to prevent people making accounts like "adminnot" to steal admin powers
-			if !strings.HasPrefix(access.Name, scope) && scope != "admin/" {
-				context.GetLogger(ctx).Debugf("Resource scope not allowed: %s", access.Name)
+			if scope == "admin/" || scope == "sysinv/" {
+				skipStandardAuthz = true
+			}
+
+			// we do not allow "mtce" to access the mtce repo because it is reserved for internal use
+			// we still allow the admin accounts to access the "mtce repo though
+                        if strings.HasPrefix(access.Name, scope) && scope == "mtce/" {
+                                dcontext.GetLogger(ctx).Debugf("Resource scope not allowed: %s", access.Name)
+                                continue
+                        }
+
+			if !strings.HasPrefix(access.Name, scope) && !skipStandardAuthz {
+				dcontext.GetLogger(ctx).Debugf("Resource scope not allowed: %s", access.Name)
 				continue
 			}
 			if enforceRepoClass {
 				if class, ok := repositoryClassCache[access.Name]; ok {
 					if class != access.Class {
-						context.GetLogger(ctx).Debugf("Different repository class: %q, previously %q", access.Class, class)
+						dcontext.GetLogger(ctx).Debugf("Different repository class: %q, previously %q", access.Class, class)
 						continue
 					}
 				} else if strings.EqualFold(access.Action, "push") {
@@ -198,12 +240,12 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 			}
 		} else if access.Type == "registry" {
 			if access.Name != "catalog" {
-				context.GetLogger(ctx).Debugf("Unknown registry resource: %s", access.Name)
+				dcontext.GetLogger(ctx).Debugf("Unknown registry resource: %s", access.Name)
 				continue
 			}
 			// TODO: Limit some actions to "admin" users
 		} else {
-			context.GetLogger(ctx).Debugf("Skipping unsupported resource type: %s", access.Type)
+			dcontext.GetLogger(ctx).Debugf("Skipping unsupported resource type: %s", access.Type)
 			continue
 		}
 		grantedAccessList = append(grantedAccessList, access)
@@ -226,7 +268,7 @@ func (grantedAccess) String() string { return "grantedAccess" }
 // getToken handles authenticating the request and authorizing access to the
 // requested scopes.
 func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	context.GetLogger(ctx).Info("getToken")
+	dcontext.GetLogger(ctx).Info("getToken")
 
 	params := r.URL.Query()
 	service := params.Get("service")
@@ -252,30 +294,30 @@ func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *h
 		}
 
 		// Get response context.
-		ctx, w = context.WithResponseWriter(ctx, w)
+		ctx, w = dcontext.WithResponseWriter(ctx, w)
 
-		challenge.SetHeaders(w)
+		challenge.SetHeaders(r, w)
 		handleError(ctx, errcode.ErrorCodeUnauthorized.WithDetail(challenge.Error()), w)
 
-		context.GetResponseLogger(ctx).Info("get token authentication challenge")
+		dcontext.GetResponseLogger(ctx).Info("get token authentication challenge")
 
 		return
 	}
 	ctx = authorizedCtx
 
-	username := context.GetStringValue(ctx, "auth.user.name")
+	username := dcontext.GetStringValue(ctx, "auth.user.name")
 
 	ctx = context.WithValue(ctx, acctSubject{}, username)
-	ctx = context.WithLogger(ctx, context.GetLogger(ctx, acctSubject{}))
+	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, acctSubject{}))
 
-	context.GetLogger(ctx).Info("authenticated client")
+	dcontext.GetLogger(ctx).Info("authenticated client")
 
 	ctx = context.WithValue(ctx, requestedAccess{}, requestedAccessList)
-	ctx = context.WithLogger(ctx, context.GetLogger(ctx, requestedAccess{}))
+	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, requestedAccess{}))
 
 	grantedAccessList := filterAccessList(ctx, username, requestedAccessList)
 	ctx = context.WithValue(ctx, grantedAccess{}, grantedAccessList)
-	ctx = context.WithLogger(ctx, context.GetLogger(ctx, grantedAccess{}))
+	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, grantedAccess{}))
 
 	token, err := ts.issuer.CreateJWT(username, service, grantedAccessList)
 	if err != nil {
@@ -283,7 +325,7 @@ func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
-	context.GetLogger(ctx).Info("authorized client")
+	dcontext.GetLogger(ctx).Info("authorized client")
 
 	response := tokenResponse{
 		Token:     token,
@@ -298,12 +340,12 @@ func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *h
 		}
 	}
 
-	ctx, w = context.WithResponseWriter(ctx, w)
+	ctx, w = dcontext.WithResponseWriter(ctx, w)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 
-	context.GetResponseLogger(ctx).Info("get token complete")
+	dcontext.GetResponseLogger(ctx).Info("get token complete")
 }
 
 type postTokenResponse struct {
@@ -388,16 +430,16 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	ctx = context.WithValue(ctx, acctSubject{}, subject)
-	ctx = context.WithLogger(ctx, context.GetLogger(ctx, acctSubject{}))
+	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, acctSubject{}))
 
-	context.GetLogger(ctx).Info("authenticated client")
+	dcontext.GetLogger(ctx).Info("authenticated client")
 
 	ctx = context.WithValue(ctx, requestedAccess{}, requestedAccessList)
-	ctx = context.WithLogger(ctx, context.GetLogger(ctx, requestedAccess{}))
+	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, requestedAccess{}))
 
 	grantedAccessList := filterAccessList(ctx, subject, requestedAccessList)
 	ctx = context.WithValue(ctx, grantedAccess{}, grantedAccessList)
-	ctx = context.WithLogger(ctx, context.GetLogger(ctx, grantedAccess{}))
+	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, grantedAccess{}))
 
 	token, err := ts.issuer.CreateJWT(subject, service, grantedAccessList)
 	if err != nil {
@@ -405,7 +447,7 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	context.GetLogger(ctx).Info("authorized client")
+	dcontext.GetLogger(ctx).Info("authorized client")
 
 	response := postTokenResponse{
 		Token:     token,
@@ -426,10 +468,10 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 		response.RefreshToken = rToken
 	}
 
-	ctx, w = context.WithResponseWriter(ctx, w)
+	ctx, w = dcontext.WithResponseWriter(ctx, w)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 
-	context.GetResponseLogger(ctx).Info("post token complete")
+	dcontext.GetResponseLogger(ctx).Info("post token complete")
 }

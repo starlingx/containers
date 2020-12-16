@@ -27,11 +27,11 @@
 
 [[constraint]]
   name = "github.com/Sirupsen/logrus"
-  revision = "55eb11d21d2a31a3cc93838241d04800f52e823d"
+  revision = "3d4380f53a34dcdc95f0c1db702615992b38d9a4"
 
 [[constraint]]
   name = "github.com/docker/distribution"
-  version = "2.6.2"
+  version = "2.7.1"
 
 [prune]
   go-tests = true
@@ -43,7 +43,7 @@
 
 [[constraint]]
   name = "github.com/gorilla/mux"
-  revision = "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+  revision = "599cba5e7b6137d46ddf58fb1765f5d928e69604"
 
 [[constraint]]
   name = "github.com/gophercloud/gophercloud"
