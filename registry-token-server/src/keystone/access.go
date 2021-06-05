@@ -14,12 +14,78 @@ import (
         "context"
 	"fmt"
 	"net/http"
+	"time"
 
 	dcontext "github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/auth"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 )
+
+type credentials struct {
+	username, password string
+}
+
+var credentialsCache = make([]credentials, 0)
+var cacheInvalidateInterval = time.Duration(10) * time.Minute
+var lastCacheInvalidation = time.Now()
+const cacheSize = 20
+
+// add the username and password pair into the cache
+// if the cache is already full, the oldest entry is removed
+// if the username already exist, update the password
+func cacheStore(username string, password string) {
+	// invalidate cache every <interval>
+	currentTime := time.Now()
+	if currentTime.Sub(lastCacheInvalidation) > cacheInvalidateInterval {
+		credentialsCache = make([]credentials, 0)
+		lastCacheInvalidation = time.Now()
+	}
+
+	for i, cacheEntry := range credentialsCache {
+		if cacheEntry.username == username {
+			credentialsCache[i].password = password
+			return
+		}
+	}
+
+	// credentials does not exist in the cache
+	if len(credentialsCache) >= cacheSize {
+		credentialsCache = credentialsCache[:cacheSize - 1]
+	}
+	newCredentials := credentials{
+		username: username,
+		password: password,
+	}
+	credentialsCache = append(credentialsCache, newCredentials)
+}
+
+// check if the username password pair exist in the cache
+// if the user exists, move them to the top of the cache
+func cacheCheck(username string, password string) bool {
+	// invalidate cache every <interval>
+	currentTime := time.Now()
+	if currentTime.Sub(lastCacheInvalidation) > cacheInvalidateInterval {
+		credentialsCache = make([]credentials, 0)
+		lastCacheInvalidation = time.Now()
+	}
+	for i, cacheEntry := range credentialsCache {
+		if cacheEntry.username == username && cacheEntry.password == password{
+			// move the entry to the top if it is not at the top already
+			if i != 0 {
+				temp := credentials{
+					username: username,
+					password: password,
+				}
+				credentialsCache = append(credentialsCache[:i], credentialsCache[i+1:]...)
+				credentialsCache = append([]credentials{temp}, credentialsCache...)
+			}
+			return true
+		}
+	}
+	// entry not found
+	return false
+}
 
 type accessController struct {
 	realm    string
@@ -63,12 +129,15 @@ func (ac *accessController) Authorized(ctx context.Context, accessRecords ...aut
 		DomainID:         "default",
 	}
 
-	if _, err := openstack.AuthenticatedClient(opts); err != nil {
-		dcontext.GetLogger(ctx).Errorf("error authenticating user %q: %v", username, err)
-		return nil, &challenge{
-			realm: ac.realm,
-			err:   auth.ErrAuthenticationFailure,
+	if !cacheCheck(username, password){
+		if _, err := openstack.AuthenticatedClient(opts); err != nil {
+			dcontext.GetLogger(ctx).Errorf("error authenticating user %q: %v", username, err)
+			return nil, &challenge{
+				realm: ac.realm,
+				err:   auth.ErrAuthenticationFailure,
+			}
 		}
+		cacheStore(username, password)
 	}
 
 	return auth.WithUser(ctx, auth.UserInfo{Name: username}), nil
@@ -85,9 +154,12 @@ func (ac *accessController) AuthenticateUser(username string, password string) e
 		DomainID:         "default",
 	}
 
-	if _, err := openstack.AuthenticatedClient(opts); err != nil {
-		dcontext.GetLogger(context.Background()).Errorf("error authenticating user %q: %v", username, err)
-		return auth.ErrAuthenticationFailure
+        if !cacheCheck(username, password){
+		if _, err := openstack.AuthenticatedClient(opts); err != nil {
+			dcontext.GetLogger(context.Background()).Errorf("error authenticating user %q: %v", username, err)
+			return auth.ErrAuthenticationFailure
+		}
+                cacheStore(username, password)
 	}
 
 	return nil
