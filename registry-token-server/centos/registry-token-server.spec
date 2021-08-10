@@ -23,7 +23,9 @@ Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
 
-BuildRequires:  golang >= 1.6
+# Build with our own prefered golang, not 1.11 from CentOS
+# BuildRequires:  golang >= 1.6
+BuildRequires:  golang >= 1.13
 ExclusiveArch:  %{?go_arches:%{go_arches}}%{!?go_arches:%{ix86} x86_64 %{arm}}
 
 %description
@@ -48,6 +50,7 @@ mkdir -p _build/src/github.com/gophercloud && mv gophercloud-gophercloud _build/
 mkdir -p ./_build/src/
 ln -s $(pwd) ./_build/src/registry-token-server
 export GOPATH=$(pwd)/_build:%{gopath}
+go env -w GO111MODULE=auto
 
 cd ./_build/src/registry-token-server
 %gobuild -o bin/registry-token-server registry-token-server
