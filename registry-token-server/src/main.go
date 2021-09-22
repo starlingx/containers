@@ -184,7 +184,9 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 			publicRepos := []string{"public/"}
 			// pause is usually used as a test deployment by kubernetes and deployed without pull secrets
 			// acmesolver is deployed in a namespace that don't have access to pull secrets
+                        // n3000-opae is used during puppet manifest at which point credentials cannot be obtained
 			publicImages := []string{"k8s.gcr.io/pause",
+                                                 "docker.io/starlingx/n3000-opae",
 						 "quay.io/jetstack/cert-manager-acmesolver"}
 
 			// this controls our own authorization rules like admin accounts and public repos/images
