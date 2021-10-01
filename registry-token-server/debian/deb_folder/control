@@ -1,0 +1,17 @@
+Source: registry-token-server
+Section: admin
+Priority: optional
+Maintainer: StarlingX Developers <starlingx-discuss@lists.starlingx.io>
+Build-Depends: debhelper-compat (= 13),
+               dh-golang,
+               golang-any (>= 2:1.13~)
+Standards-Version: 4.4.1
+XS-Go-Import-Path: registry-token-server
+
+Package: registry-token-server
+Architecture: amd64
+Multi-Arch: no
+Depends: ${misc:Depends},
+ ${shlibs:Depends}
+Description: Token server
+ Token server for use with Docker registry with Openstack Keystone backend

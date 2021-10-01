@@ -1,0 +1,5 @@
+registry-token-server (1.0-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- Dan Voiculeasa <dan.voiculeasa@windriver.com>  Wed, 18 Aug 2021 14:41:40 -0400
