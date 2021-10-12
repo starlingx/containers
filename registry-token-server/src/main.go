@@ -270,7 +270,7 @@ func (grantedAccess) String() string { return "grantedAccess" }
 // getToken handles authenticating the request and authorizing access to the
 // requested scopes.
 func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	dcontext.GetLogger(ctx).Info("getToken")
+	dcontext.GetLogger(ctx).Debug("getToken")
 
 	params := r.URL.Query()
 	service := params.Get("service")
@@ -312,7 +312,7 @@ func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *h
 	ctx = context.WithValue(ctx, acctSubject{}, username)
 	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, acctSubject{}))
 
-	dcontext.GetLogger(ctx).Info("authenticated client")
+	dcontext.GetLogger(ctx).Debug("authenticated client")
 
 	ctx = context.WithValue(ctx, requestedAccess{}, requestedAccessList)
 	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, requestedAccess{}))
@@ -327,7 +327,7 @@ func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
-	dcontext.GetLogger(ctx).Info("authorized client")
+	dcontext.GetLogger(ctx).Debug("authorized client")
 
 	response := tokenResponse{
 		Token:     token,
@@ -347,7 +347,7 @@ func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *h
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 
-	dcontext.GetResponseLogger(ctx).Info("get token complete")
+	dcontext.GetResponseLogger(ctx).Debug("get token complete")
 }
 
 type postTokenResponse struct {
@@ -434,7 +434,7 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 	ctx = context.WithValue(ctx, acctSubject{}, subject)
 	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, acctSubject{}))
 
-	dcontext.GetLogger(ctx).Info("authenticated client")
+	dcontext.GetLogger(ctx).Debug("authenticated client")
 
 	ctx = context.WithValue(ctx, requestedAccess{}, requestedAccessList)
 	ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx, requestedAccess{}))
@@ -449,7 +449,7 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 		return
 	}
 
-	dcontext.GetLogger(ctx).Info("authorized client")
+	dcontext.GetLogger(ctx).Debug("authorized client")
 
 	response := postTokenResponse{
 		Token:     token,
@@ -475,5 +475,5 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 
-	dcontext.GetResponseLogger(ctx).Info("post token complete")
+	dcontext.GetResponseLogger(ctx).Debug("post token complete")
 }
