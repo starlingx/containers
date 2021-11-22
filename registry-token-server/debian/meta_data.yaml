@@ -1,7 +1,30 @@
 ---
 debname: registry-token-server
 debver: 1.0-1
-dl_hook: dl_hook
+src_path: src
+src_files:
+- centos/files/token_server.conf
+dl_files:
+  Sirupsen-logrus-3d4380f53a34dcdc95f0c1db702615992b38d9a4.tar.gz:
+    topdir: Sirupsen-logrus
+    url: github.com/Sirupsen/logrus/archive/3d4380f53a34dcdc95f0c1db702615992b38d9a4.tar.gz
+    md5sum: 5b80ce9a5a54938a598dc65675786142
+  docker-distribution-v2.7.1.tar.gz:
+    topdir: docker-distribution-2.7.1
+    url: https://github.com/docker/distribution/archive/v2.7.1.tar.gz
+    md5sum: 51c06d340d9572bdf7c457f98a521727
+  docker-libtrust-fa567046d9b14f6aa788882a950d69651d230b21.tar.gz:
+    topdir: docker-libtrust
+    url: https://github.com/docker/libtrust/archive/fa567046d9b14f6aa788882a950d69651d230b21.tar.gz
+    md5sum: f8602094367d857ef91eb95d5168ad94
+  gophercloud-gophercloud-aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz:
+    topdir: gophercloud-gophercloud
+    url: github.com/gophercloud/gophercloud/archive/aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz
+    md5sum: 1e63645a0d37f3aea3efbd0bd555511e
+  gorilla-mux-599cba5e7b6137d46ddf58fb1765f5d928e69604.tar.gz:
+    topdir: gorilla-mux
+    url: https://github.com/gorilla/mux/archive/599cba5e7b6137d46ddf58fb1765f5d928e69604.tar.gz
+    md5sum: 561c3413396b70e486ceb65177f62c30
 revision:
   dist: $STX_DIST
   PKG_GITREVCOUNT: true

@@ -1,0 +1,32 @@
+From 29b597c68f14e315c2a5b4f108ca49e4772805b0 Mon Sep 17 00:00:00 2001
+From: Yue Tao <Yue.Tao@windriver.com>
+Date: Mon, 22 Nov 2021 07:14:32 -0800
+Subject: [PATCH] main.go: workaround go install issue
+
+case-insensitive import collision: "github.com/sirupsen/logrus"
+and "github.com/Sirupsen/logrus". Before implementing the fix
+by transforming to lowercase Sirupsen, this needs to be tested
+CentOS side.
+
+Signed-off-by:  Dan Voiculeasa <dan.voiculeasa@windriver.com>
+Signed-off-by: Yue Tao <Yue.Tao@windriver.com>
+---
+ main.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/main.go b/main.go
+index aafb069..e71313a 100644
+--- a/main.go
++++ b/main.go
+@@ -17,7 +17,7 @@ import (
+ 	"strings"
+ 	"time"
+ 
+-	"github.com/Sirupsen/logrus"
++	"github.com/sirupsen/logrus"
+ 	dcontext "github.com/docker/distribution/context"
+ 	"github.com/docker/distribution/registry/api/errcode"
+ 	"github.com/docker/distribution/registry/auth"
+-- 
+2.31.1
+
