@@ -29,3 +29,6 @@ override_dh_auto_build:
 	mkdir -p _build/src/github.com/gophercloud && mv gophercloud-gophercloud _build/src/github.com/gophercloud/gophercloud
 
 	dh_auto_build
+
+override_dh_installsystemd:
+	dh_installsystemd -pregistry-token-server --no-enable --no-start registry-token-server.service
