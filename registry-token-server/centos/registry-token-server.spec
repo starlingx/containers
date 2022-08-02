@@ -49,7 +49,7 @@ mkdir -p _build/src/github.com/gophercloud && mv gophercloud-gophercloud _build/
 %build
 mkdir -p ./_build/src/
 ln -s $(pwd) ./_build/src/registry-token-server
-export GOPATH=$(pwd)/_build:%{gopath}
+export GOPATH=$(pwd)/_build
 go env -w GO111MODULE=auto
 
 cd ./_build/src/registry-token-server
