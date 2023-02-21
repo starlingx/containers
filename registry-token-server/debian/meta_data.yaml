@@ -27,4 +27,6 @@ dl_files:
     md5sum: 561c3413396b70e486ceb65177f62c30
 revision:
   dist: $STX_DIST
-  PKG_GITREVCOUNT: true
+  GITREVCOUNT:
+    BASE_SRCREV: b2601f2d3bba4a06ba546a378526a4fc2f663fc0
+    SRC_DIR: ${MY_REPO}/stx/containers/registry-token-server
