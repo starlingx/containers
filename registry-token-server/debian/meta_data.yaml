@@ -9,10 +9,10 @@ dl_files:
     topdir: Sirupsen-logrus
     url: github.com/Sirupsen/logrus/archive/3d4380f53a34dcdc95f0c1db702615992b38d9a4.tar.gz
     md5sum: 5b80ce9a5a54938a598dc65675786142
-  docker-distribution-v2.7.1.tar.gz:
-    topdir: docker-distribution-2.7.1
-    url: https://github.com/docker/distribution/archive/v2.7.1.tar.gz
-    md5sum: 51c06d340d9572bdf7c457f98a521727
+  docker-distribution-v2.8.2.tar.gz:
+    topdir: docker-distribution-2.8.2
+    url: https://github.com/docker/distribution/archive/v2.8.2.tar.gz
+    md5sum: f08352cec6952d5d5879c882e0efecfe
   docker-libtrust-fa567046d9b14f6aa788882a950d69651d230b21.tar.gz:
     topdir: docker-libtrust
     url: https://github.com/docker/libtrust/archive/fa567046d9b14f6aa788882a950d69651d230b21.tar.gz

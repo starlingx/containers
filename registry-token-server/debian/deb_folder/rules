@@ -11,19 +11,19 @@ export DH_GOLANG_GO_GENERATE := 1
 override_dh_auto_build:
 	# Can't unpack in download hook step, because debian build system will mess the go build environment
 	gzip -dc Sirupsen-logrus-3d4380f53a34dcdc95f0c1db702615992b38d9a4.tar.gz | tar -xvvf -
-	gzip -dc docker-distribution-v2.7.1.tar.gz | tar -xvvf -
+	gzip -dc docker-distribution-v2.8.2.tar.gz | tar -xvvf -
 	gzip -dc docker-libtrust-fa567046d9b14f6aa788882a950d69651d230b21.tar.gz | tar -xvvf -
 	gzip -dc gophercloud-gophercloud-aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz | tar -xvvf -
 	gzip -dc gorilla-mux-599cba5e7b6137d46ddf58fb1765f5d928e69604.tar.gz | tar -xvvf -
 
 	rm Sirupsen-logrus-3d4380f53a34dcdc95f0c1db702615992b38d9a4.tar.gz
-	rm docker-distribution-v2.7.1.tar.gz
+	rm docker-distribution-v2.8.2.tar.gz
 	rm docker-libtrust-fa567046d9b14f6aa788882a950d69651d230b21.tar.gz
 	rm gophercloud-gophercloud-aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz
 	rm gorilla-mux-599cba5e7b6137d46ddf58fb1765f5d928e69604.tar.gz
 
 	mkdir -p _build/src/github.com/gorilla/ && mv gorilla-mux _build/src/github.com/gorilla/mux
-	mkdir -p _build/src/github.com/docker/ && mv docker-distribution-2.7.1 _build/src/github.com/docker/distribution
+	mkdir -p _build/src/github.com/docker/ && mv docker-distribution-2.8.2 _build/src/github.com/docker/distribution
 	mkdir -p _build/src/github.com/docker/ && mv docker-libtrust _build/src/github.com/docker/libtrust
 	mkdir -p _build/src/github.com/sirupsen/ && mv Sirupsen-logrus _build/src/github.com/sirupsen/logrus
 	mkdir -p _build/src/github.com/gophercloud && mv gophercloud-gophercloud _build/src/github.com/gophercloud/gophercloud

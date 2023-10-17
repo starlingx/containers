@@ -8,7 +8,8 @@
 package main
 
 import (
-        "context"
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"math/rand"
@@ -105,19 +106,48 @@ func main() {
 	router.Path("/token/").Methods("GET").Handler(handlerWithContext(ctx, ts.getToken))
 	router.Path("/token/").Methods("POST").Handler(handlerWithContext(ctx, ts.postToken))
 
-	if cert == "" {
-		err = http.ListenAndServe(addr, router)
-	} else if certKey == "" {
-		logrus.Fatalf("Must provide certficate (-tlscert) and key (-tlskey)")
-	} else {
-		err = http.ListenAndServeTLS(addr, cert, certKey, router)
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
 	}
 
-	if err != nil {
+	if cert == ""
+	{
+		server := &http.Server
+		{
+			Addr:      addr,
+			Handler:   router,
+		}
+		err = server.ListenAndServe()
+	}
+	else
+	{
+		server := &http.Server
+		{
+			Addr: addr,
+			TLSConfig: tlsConfig,
+			Handler: router,
+		}
+		err = server.ListenAndServeTLS(cert, certKey)
+	}
+
+	if err != nil
+	{
 		logrus.Infof("Error serving: %v", err)
 	}
 
 }
+
 
 // handlerWithContext wraps the given context-aware handler by setting up the
 // request context from a base context.
