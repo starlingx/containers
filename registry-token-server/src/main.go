@@ -121,19 +121,14 @@ func main() {
 		},
 	}
 
-	if cert == ""
-	{
-		server := &http.Server
-		{
+	if cert == "" {
+		server := &http.Server{
 			Addr:      addr,
 			Handler:   router,
 		}
 		err = server.ListenAndServe()
-	}
-	else
-	{
-		server := &http.Server
-		{
+	} else {
+		server := &http.Server{
 			Addr: addr,
 			TLSConfig: tlsConfig,
 			Handler: router,
@@ -141,13 +136,11 @@ func main() {
 		err = server.ListenAndServeTLS(cert, certKey)
 	}
 
-	if err != nil
-	{
+	if err != nil {
 		logrus.Infof("Error serving: %v", err)
 	}
 
 }
-
 
 // handlerWithContext wraps the given context-aware handler by setting up the
 // request context from a base context.
