@@ -3,7 +3,7 @@ debname: registry-token-server
 debver: 1.0-1
 src_path: src
 src_files:
-- centos/files/token_server.conf
+- files/token_server.conf
 dl_files:
   Sirupsen-logrus-3d4380f53a34dcdc95f0c1db702615992b38d9a4.tar.gz:
     topdir: Sirupsen-logrus
