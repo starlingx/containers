@@ -1,6 +1,6 @@
 // Initial file was taken from https://github.com/docker/distribution 2018 Sept
 //
-// Copyright (c) 2018 Wind River Systems, Inc.
+// Copyright (c) 2018-2024 Wind River Systems, Inc.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -208,6 +208,7 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 			// acmesolver is deployed in a namespace that don't have access to pull secrets
                         // n3000-opae is used during puppet manifest at which point credentials cannot be obtained
 			publicImages := []string{"k8s.gcr.io/pause",
+			                         "registry.k8s.io/pause",
                                                  "docker.io/starlingx/n3000-opae",
 						 "quay.io/jetstack/cert-manager-acmesolver"}
 
