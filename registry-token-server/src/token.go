@@ -8,6 +8,8 @@ package main
 import (
         "context"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -156,7 +158,20 @@ func (issuer *TokenIssuer) CreateJWT(subject string, audience string, grantedAcc
 	case "RSA":
 		alg = "RS256"
 	case "EC":
-		alg = "ES256"
+		ecKey := issuer.SigningKey.CryptoPrivateKey().(*ecdsa.PrivateKey)
+		switch ecKey.Curve {
+		case elliptic.P256():
+			alg = "ES256"
+			signingHash = crypto.SHA256
+		case elliptic.P384():
+			alg = "ES384"
+			signingHash = crypto.SHA384
+		case elliptic.P521():
+			alg = "ES512"
+			signingHash = crypto.SHA512
+		default:
+			panic(fmt.Errorf("unsupported EC curve"))
+		}
 	default:
 		panic(fmt.Errorf("unsupported signing key type %q", issuer.SigningKey.KeyType()))
 	}
