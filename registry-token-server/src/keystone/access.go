@@ -12,8 +12,11 @@ package keystone
 
 import (
         "context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	dcontext "github.com/docker/distribution/context"
@@ -23,18 +26,28 @@ import (
 )
 
 type credentials struct {
-	username, password string
+	username, hash string
+}
+
+// hashCredentials produces a hex-encoded SHA256 hash of the username and password.
+func hashCredentials(username, password string) string {
+	h := sha256.Sum256([]byte(username + ":" + password))
+	return hex.EncodeToString(h[:])
 }
 
 var credentialsCache = make([]credentials, 0)
+var cacheMu sync.Mutex
 var cacheInvalidateInterval = time.Duration(10) * time.Minute
 var lastCacheInvalidation = time.Now()
 const cacheSize = 20
+const keystoneTimeout = 15 * time.Second
 
 // add the username and password pair into the cache
 // if the cache is already full, the oldest entry is removed
-// if the username already exist, update the password
+// if the username already exist, update the hash
 func cacheStore(username string, password string) {
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
 	// invalidate cache every <interval>
 	currentTime := time.Now()
 	if currentTime.Sub(lastCacheInvalidation) > cacheInvalidateInterval {
@@ -42,9 +55,11 @@ func cacheStore(username string, password string) {
 		lastCacheInvalidation = time.Now()
 	}
 
+	h := hashCredentials(username, password)
+
 	for i, cacheEntry := range credentialsCache {
 		if cacheEntry.username == username {
-			credentialsCache[i].password = password
+			credentialsCache[i].hash = h
 			return
 		}
 	}
@@ -55,7 +70,7 @@ func cacheStore(username string, password string) {
 	}
 	newCredentials := credentials{
 		username: username,
-		password: password,
+		hash:     h,
 	}
 	credentialsCache = append(credentialsCache, newCredentials)
 }
@@ -63,20 +78,20 @@ func cacheStore(username string, password string) {
 // check if the username password pair exist in the cache
 // if the user exists, move them to the top of the cache
 func cacheCheck(username string, password string) bool {
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
 	// invalidate cache every <interval>
 	currentTime := time.Now()
 	if currentTime.Sub(lastCacheInvalidation) > cacheInvalidateInterval {
 		credentialsCache = make([]credentials, 0)
 		lastCacheInvalidation = time.Now()
 	}
+	h := hashCredentials(username, password)
 	for i, cacheEntry := range credentialsCache {
-		if cacheEntry.username == username && cacheEntry.password == password{
+		if cacheEntry.username == username && cacheEntry.hash == h {
 			// move the entry to the top if it is not at the top already
 			if i != 0 {
-				temp := credentials{
-					username: username,
-					password: password,
-				}
+				temp := credentialsCache[i]
 				credentialsCache = append(credentialsCache[:i], credentialsCache[i+1:]...)
 				credentialsCache = append([]credentials{temp}, credentialsCache...)
 			}
@@ -93,6 +108,16 @@ type accessController struct {
 }
 
 var _ auth.AccessController = &accessController{}
+
+// authenticateKeystone performs a keystone authentication with a timeout.
+func authenticateKeystone(opts gophercloud.AuthOptions) error {
+	client, err := openstack.NewClient(opts.IdentityEndpoint)
+	if err != nil {
+		return err
+	}
+	client.HTTPClient.Timeout = keystoneTimeout
+	return openstack.Authenticate(client, opts)
+}
 
 func newAccessController(options map[string]interface{}) (auth.AccessController, error) {
 	realm, present := options["realm"]
@@ -130,7 +155,7 @@ func (ac *accessController) Authorized(ctx context.Context, accessRecords ...aut
 	}
 
 	if !cacheCheck(username, password){
-		if _, err := openstack.AuthenticatedClient(opts); err != nil {
+		if err := authenticateKeystone(opts); err != nil {
 			dcontext.GetLogger(ctx).Errorf("error authenticating user %q: %v", username, err)
 			return nil, &challenge{
 				realm: ac.realm,
@@ -155,7 +180,7 @@ func (ac *accessController) AuthenticateUser(username string, password string) e
 	}
 
         if !cacheCheck(username, password){
-		if _, err := openstack.AuthenticatedClient(opts); err != nil {
+		if err := authenticateKeystone(opts); err != nil {
 			dcontext.GetLogger(context.Background()).Errorf("error authenticating user %q: %v", username, err)
 			return auth.ErrAuthenticationFailure
 		}

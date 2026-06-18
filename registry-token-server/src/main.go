@@ -16,9 +16,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	dcontext "github.com/docker/distribution/context"
 	"github.com/docker/distribution/registry/api/errcode"
 	"github.com/docker/distribution/registry/auth"
@@ -185,6 +186,7 @@ type tokenServer struct {
 	issuer           *TokenIssuer
 	accessController auth.AccessController
 	refreshCache     map[string]refreshToken
+	refreshMu        sync.RWMutex
 }
 
 type tokenResponse struct {
@@ -194,6 +196,7 @@ type tokenResponse struct {
 }
 
 var repositoryClassCache = map[string]string{}
+var repoClassMu sync.RWMutex
 
 func filterAccessList(ctx context.Context, scope string, requestedAccessList []auth.Access) []auth.Access {
 	if !strings.HasSuffix(scope, "/") {
@@ -254,13 +257,18 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 				continue
 			}
 			if enforceRepoClass {
-				if class, ok := repositoryClassCache[access.Name]; ok {
+				repoClassMu.RLock()
+				class, ok := repositoryClassCache[access.Name]
+				repoClassMu.RUnlock()
+				if ok {
 					if class != access.Class {
 						dcontext.GetLogger(ctx).Debugf("Different repository class: %q, previously %q", access.Class, class)
 						continue
 					}
 				} else if strings.EqualFold(access.Action, "push") {
+					repoClassMu.Lock()
 					repositoryClassCache[access.Name] = access.Class
+					repoClassMu.Unlock()
 				}
 			}
 		} else if access.Type == "registry" {
@@ -359,10 +367,12 @@ func (ts *tokenServer) getToken(ctx context.Context, w http.ResponseWriter, r *h
 
 	if offline {
 		response.RefreshToken = newRefreshToken()
+		ts.refreshMu.Lock()
 		ts.refreshCache[response.RefreshToken] = refreshToken{
 			subject: username,
 			service: service,
 		}
+		ts.refreshMu.Unlock()
 	}
 
 	ctx, w = dcontext.WithResponseWriter(ctx, w)
@@ -423,7 +433,9 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 			handleError(ctx, ErrorUnsupportedValue.WithDetail("missing refresh_token value"), w)
 			return
 		}
+		ts.refreshMu.RLock()
 		rt, ok := ts.refreshCache[rToken]
+		ts.refreshMu.RUnlock()
 		if !ok || rt.service != service {
 			handleError(ctx, errcode.ErrorCodeUnauthorized.WithDetail("invalid refresh token"), w)
 			return
@@ -483,10 +495,12 @@ func (ts *tokenServer) postToken(ctx context.Context, w http.ResponseWriter, r *
 
 	if offline {
 		rToken = newRefreshToken()
+		ts.refreshMu.Lock()
 		ts.refreshCache[rToken] = refreshToken{
 			subject: subject,
 			service: service,
 		}
+		ts.refreshMu.Unlock()
 	}
 
 	if rToken != "" {
