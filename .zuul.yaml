@@ -3,12 +3,70 @@
     check:
       jobs:
         - openstack-tox-linters
+        - stx-containers-tox-coverage-go:
+            voting: false
+        - stx-containers-tox-security:
+            voting: false
+        - stx-containers-tox-linters-trixie:
+            voting: false
+        - stx-containers-tox-coverage-go-trixie:
+            voting: false
+        - stx-containers-tox-security-trixie:
+            voting: false
     gate:
       jobs:
         - openstack-tox-linters
     post:
       jobs:
         - stx-containers-upload-git-mirror
+
+- job:
+    name: stx-containers-tox-coverage-go
+    parent: tox
+    description: Run Go tests with coverage analysis
+    nodeset: debian-bullseye
+    pre-run: playbooks/install-go-deps.yaml
+    vars:
+      tox_envlist: coverage-go
+    post-run: playbooks/upload-coverage-reports.yaml
+
+- job:
+    name: stx-containers-tox-security
+    parent: tox
+    description: Run security analysis (go vet + gosec)
+    nodeset: debian-bullseye
+    pre-run: playbooks/install-go-deps.yaml
+    vars:
+      tox_envlist: security
+    post-run: playbooks/upload-security-reports.yaml
+
+- job:
+    name: stx-containers-tox-linters-trixie
+    parent: tox
+    description: Run linters on Trixie (Python 3.13)
+    nodeset: debian-trixie-8GB
+    vars:
+      tox_envlist: linters-trixie
+
+- job:
+    name: stx-containers-tox-coverage-go-trixie
+    parent: tox
+    description: Run Go tests with coverage analysis on Trixie
+    nodeset: debian-trixie-8GB
+    pre-run: playbooks/install-go-deps.yaml
+    vars:
+      tox_envlist: coverage-go-trixie
+    post-run: playbooks/upload-coverage-reports.yaml
+
+- job:
+    name: stx-containers-tox-security-trixie
+    parent: tox
+    description: Run security analysis (go vet + gosec) on Trixie
+    nodeset: debian-trixie-8GB
+    pre-run: playbooks/install-go-deps.yaml
+    vars:
+      tox_envlist: security-trixie
+    post-run: playbooks/upload-security-reports.yaml
 
 - job:
     name: stx-containers-upload-git-mirror
