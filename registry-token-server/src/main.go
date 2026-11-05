@@ -207,11 +207,39 @@ func filterAccessList(ctx context.Context, scope string, requestedAccessList []a
 		if access.Type == "repository" {
 
 			publicRepos := []string{"public/"}
-			// pause is usually used as a test deployment by kubernetes and deployed without pull secrets
-			// acmesolver is deployed in a namespace that don't have access to pull secrets
-			publicImages := []string{"k8s.gcr.io/pause",
-			                         "registry.k8s.io/pause",
-						 "quay.io/jetstack/cert-manager-acmesolver"}
+			// These images originate from upstream public sources and do not
+			// contain anything sensitive, so they can be pulled without a specific
+			// image pull secret. Any security-related material (keys, etc.) is
+			// configured separately, outside of the image itself.
+			publicImages := []string{"docker.io/curlimages/curl",
+						 "docker.io/fluxcd/helm-controller",
+						 "docker.io/fluxcd/source-controller",
+						 "docker.io/starlingx/multus-cni",
+						 "docker.io/starlingx/n3000-opae",
+						 "ghcr.io/fluxcd/kustomize-controller",
+						 "ghcr.io/fluxcd/notification-controller",
+						 "ghcr.io/k8snetworkplumbingwg/multus-cni",
+						 "ghcr.io/k8snetworkplumbingwg/sriov-cni",
+						 "ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin",
+						 "k8s.gcr.io/pause",
+						 "quay.io/calico/cni",
+						 "quay.io/calico/ctl",
+						 "quay.io/calico/dikastes",
+						 "quay.io/calico/envoy-gateway",
+						 "quay.io/calico/envoy-proxy",
+						 "quay.io/calico/kube-controllers",
+						 "quay.io/calico/node",
+						 "quay.io/calico/pod2daemon-flexvol",
+						 "quay.io/calico/typha",
+						 "quay.io/jetstack/cert-manager-acmesolver",
+						 "quay.io/stackanetes/kubernetes-entrypoint",
+						 "quay.io/tigera/operator",
+						 "registry.k8s.io/coredns/coredns",
+						 "registry.k8s.io/kube-apiserver",
+						 "registry.k8s.io/kube-controller-manager",
+						 "registry.k8s.io/kube-proxy",
+						 "registry.k8s.io/kube-scheduler",
+						 "registry.k8s.io/pause"}
 
 			// this controls our own authorization rules like admin accounts and public repos/images
 			// if authorized through other means, skip the usual authorization policy of
