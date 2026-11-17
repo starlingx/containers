@@ -15,8 +15,9 @@ dl_files:
     md5sum: f08352cec6952d5d5879c882e0efecfe
   docker-libtrust-fa567046d9b14f6aa788882a950d69651d230b21.tar.gz:
     topdir: docker-libtrust
-    url: https://github.com/docker/libtrust/archive/fa567046d9b14f6aa788882a950d69651d230b21.tar.gz
-    md5sum: f8602094367d857ef91eb95d5168ad94
+    url: https://github.com/docker-archive-public/docker.libtrust/archive/fa567046d9b14f6aa788882a950d69651d230b21.tar.gz
+    md5sum: 61bd44c15046535de33873a9e653fd7f
+    sha256sum: 94acb1dde00e657d70f2b637f878acc2fda8666523c7703838c519a11ec33531
   gophercloud-gophercloud-aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz:
     topdir: gophercloud-gophercloud
     url: github.com/gophercloud/gophercloud/archive/aa00757ee3ab58e53520b6cb910ca0543116400a.tar.gz
